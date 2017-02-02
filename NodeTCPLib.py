@@ -1,5 +1,6 @@
 #TODO: write function for building data messages for message names (e.g. GetBlocks)
 #TODO: write a message parser (e.g. separate control headers, lwcids, etc...)
+#TODO: move bidirectional handling to separate function
 
 import socket
 import random
@@ -9,7 +10,7 @@ class NodeTCPInstance:
     def __init__(self, node_ip, node_port):
         """
         """
-        self.STATUS_OK = b"\x00\x00\x00\x00\x00\x00\x04\x00"
+        #self.STATUS_OK = b"\x00\x00\x00\x00\x00\x00\x04\x00"
         self.STATUS_CRAF = b"\x00\x00\x00\x00"
         self.STATUS_CRIF = b"\x00\x00\x00\x01"
         self.STATUS_CNCF = b"\x00\x00\x00\x00"
@@ -95,23 +96,57 @@ class NodeTCPInstance:
         # TODO: update return value to something more useful
         return lwc_id
         
+    def handle_new_lightweight_connection_req(self, res):
+        """
+        """
+        # Check if a new lwcid has been created
+        if res[0:4] == self.STATUS_CNCF:
+            print("INFO: new lwcid created for bidirectional comms")
+        else:
+            print("ERROR: failed to create new lwcid for bidirectional comms")
+            return self.COMMS_ERROR
+            
+        # Return the newly created lwcid
+        return int.from_bytes(res[4:8], byteorder="big")
+    
     def close_heavyweight_connection(self, lwc_id):
         """
         """
         closed = False
         
         # Build and send the close connection message
-        csMessage = self.build_cs_msg(lwc_id)
-        self.conn.send(csMessage)
+        cs_message = self.build_cs_msg(lwc_id)
+        self.conn.send(cs_message)
         
         # Receive the closure response
         res = self.conn.recv(1024)
         
-        if res == csMessage:
+        if res == cs_message:
             print("INFO: heavyweight connection closed")
             closed = True
         else:
             print("ERROR: failed to close heavyweight connection")
+        
+        return closed
+        
+    def close_lightweight_connection(self, lwc_id):
+        """
+        """
+        closed = False
+        
+        # Build and send the close connection message
+        cc_message = self.build_cc_msg(lwc_id)
+        self.conn.send(cc_message)
+        
+        # Receive the closure response
+        res = self.conn.recv(1024)
+        
+        if res == cc_message:
+            print("INFO: lightweight connection closed")
+            closed = True
+        else:
+            print("ERROR: failed to close lightweight connection")
+            print("ERROR: response: %s" % res)
         
         return closed
         
@@ -144,14 +179,11 @@ class NodeTCPInstance:
         # Send the GetBlocks data message
         self.conn.send(b"%s%s%s" % (control_header, message_name_data, message_parameter_data))
         
-        # Receive the status
-        status = self.conn.recv(1024)
-        
-        if (status == self.STATUS_OK):
-            print("INFO: Node accepted GetBlocks request")
-        else:
-            print("ERROR: Node did not accept GetBlocks request")
-            print("INFO: Received instead: %s" % status)
+        # Receive and parse out the new lwcid (for bidirectional comms)
+        res = self.conn.recv(1024)
+        b_lwcid = self.handle_new_lightweight_connection_req(res)
+        if b_lwcid == self.COMMS_ERROR:
+            print("ERROR: failed to establish bidirectional comms")
             return self.COMMS_ERROR
         
         # Receive the requested data
@@ -159,6 +191,14 @@ class NodeTCPInstance:
         # transmissions
         res = self.conn.recv(8192)
         
+        #TODO: Does the harness need to respond to the CC message?
+        ## Check to see if the node wants to close the lwcid it generated
+        #if res[-8:] == self.build_cc_msg(b_lwcid):
+        #    print("INFO: closing bidirectional comms")
+        #    self.conn.send(res[-8:])
+        #else:
+        #    print("INFO: node does not want bidirectional comms closed")
+
         return res
         
     def sys_start_request(self, lwc_id, nonce = None):
@@ -185,17 +225,23 @@ class NodeTCPInstance:
         # Send the data message
         self.conn.send(b"%s%s%s" % (control_header, message_name_data, message_null_data))
         
-        # Receive the status
+        # Receive and parse out the new lwcid (for bidirectional comms)
         res = self.conn.recv(1024)
-        
-        if res == self.STATUS_OK:
-            print("INFO: SysStartReqeust accepted")
-        else:
-            print("ERROR: SysStartRequest rejected")
+        b_lwcid = self.handle_new_lightweight_connection_req(res)
+        if b_lwcid == self.COMMS_ERROR:
+            print("ERROR: failed to establish bidirectional comms")
             return self.COMMS_ERROR
             
         # Receive the response 
         res = self.conn.recv(1024)
+        
+        #TODO: Does the harness need to respond to the CC message?
+        ## Check to see if the node wants to close the lwcid it generated
+        #if res[-8:] == self.build_cc_msg(b_lwcid):
+        #    print("INFO: closing bidirectional comms")
+        #    self.conn.send(res[-8:])
+        #else:
+        #    print("INFO: node does not want bidirectional comms closed")
             
         return res
         
