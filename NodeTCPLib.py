@@ -10,7 +10,6 @@ class NodeTCPInstance:
     def __init__(self, node_ip, node_port):
         """
         """
-        #self.STATUS_OK = b"\x00\x00\x00\x00\x00\x00\x04\x00"
         self.STATUS_CRAF = b"\x00\x00\x00\x00"
         self.STATUS_CRIF = b"\x00\x00\x00\x01"
         self.STATUS_CNCF = b"\x00\x00\x00\x00"
@@ -149,7 +148,7 @@ class NodeTCPInstance:
             print("ERROR: response: %s" % res)
         
         return closed
-        
+    
     def get_blocks(self, lwc_id, oldest_hash, newest_hash, nonce = None):
         """
         """
@@ -245,6 +244,46 @@ class NodeTCPInstance:
             
         return res
         
+    def version_req(self, lwc_id, nonce = None):
+        """
+        """
+        # Create the nonce if needed
+        if nonce is None:
+            nonce = random.randrange(0, 0xFFFFFFFFFFFFFFFF)
+        nonce_bytes = nonce.to_bytes(8, byteorder = "big")
+        # Prepend the control code
+        nonce_bytes = b"%s%s" % (b"S", nonce_bytes)
+        
+        # Build a bidirectional control header
+        control_header = self.build_data_msg(lwc_id, nonce_bytes)
+        
+        message_name_bytes = b"VersionReq"
+        encoded_message_name_bytes = b"%s%s" % (len(message_name_bytes).to_bytes(1, byteorder="big"), message_name_bytes)
+        message_name_data = self.build_data_msg(lwc_id, encoded_message_name_bytes)
+        
+        # Send the data message
+        self.conn.send(b"%s%s" % (control_header, message_name_data))
+        
+        # Receive and parse out the new lwcid (for bidirectional comms)
+        res = self.conn.recv(1024)
+        b_lwcid = self.handle_new_lightweight_connection_req(res)
+        if b_lwcid == self.COMMS_ERROR:
+            print("ERROR: failed to establish bidirectional comms")
+            return self.COMMS_ERROR
+        
+        # Receive the response
+        res = self.conn.recv(1024)
+        
+        #TODO: Does the harness need to respond to the CC message?
+        ## Check to see if the node wants to close the lwcid it generated
+        #if res[-8:] == self.build_cc_msg(b_lwcid):
+        #    print("INFO: closing bidirectional comms")
+        #    self.conn.send(res[-8:])
+        #else:
+        #    print("INFO: node does not want bidirectional comms closed")
+            
+        return res
+    
     def close_socket(self):
         """
         """

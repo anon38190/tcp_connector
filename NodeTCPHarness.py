@@ -3,6 +3,40 @@ import time
 
 from NodeTCPLib import NodeTCPInstance
 
+def test_version_request():
+    """
+    """
+    success = False;
+    
+    # Create a node TCP instance
+    session = NodeTCPInstance("127.0.0.1", 3000)
+    
+    lwc_id = session.create_lightweight_connection(0, 0)
+    if lwc_id == -1:
+        print("INFO: could not create lightweight connection, terminating early")
+        early_termination(session)
+        return success
+    else:
+        print("INFO: started comms with node with lwcid %d" % (lwc_id))
+        
+    # Provides time to tinker with WireShark    
+    time.sleep(2)
+    
+    version = session.version_req(lwc_id)
+    print("INFO: VersionReq -> %s" % version)
+
+    # Provides time to tinker with WireShark
+    time.sleep(2)
+    
+    session.close_heavyweight_connection(lwc_id)
+    
+    # Close the socket
+    session.close_socket()
+    
+    success = True
+    
+    return success
+
 def test_sys_start_request():
     """
     """
@@ -91,5 +125,5 @@ def early_termination(session, lwc_id = None):
     session.close_socket()
 
 if __name__ == "__main__":
-    test_get_blocks()
+    test_version_request()
 
