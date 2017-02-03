@@ -112,6 +112,38 @@ def test_get_blocks():
     
     return success
     
+def test_peer_state():
+    """
+    """
+    success = False
+    
+    # Create a node TCP instance
+    session = NodeTCPInstance("127.0.0.1", 3000)
+    
+    lwc_id = session.create_lightweight_connection(0, 0)
+    if lwc_id == -1:
+        print("INFO: could not create lightweight connection, terminating early")
+        early_termination(session)
+        return success
+    else:
+        print("INFO: started comms with node with lwcid %d" % (lwc_id))
+        
+    # Provides time to tinker with WireShark    
+    time.sleep(2)
+    
+    # Send SysStartRequest
+    res = session.peer_state(lwc_id)
+    print("INFO: PeerState -> %s" % res)
+    
+    # Provides time to tinker with WireShark
+    time.sleep(2)
+    
+    session.close_heavyweight_connection(lwc_id)
+    
+    # Close the socket
+    session.close_socket()
+    
+    success = True  
 
 def early_termination(session, lwc_id = None):
     """
@@ -125,5 +157,5 @@ def early_termination(session, lwc_id = None):
     session.close_socket()
 
 if __name__ == "__main__":
-    test_version_request()
+    test_peer_state()
 
