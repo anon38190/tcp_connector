@@ -193,30 +193,6 @@ def test_getblocks():
     
     # Close the node connection
     h.disconnect()
-    
-def test_blockheaders():
-    """
-    """
-    # Create the harness instance
-    h = Harness()
-    
-    # Connect to a node
-    h.connect("127.0.0.1", 3000, 0)
-    
-    # Generate a "BlockHeaders" message
-    msg_components = h.generate_msg(msg_type = "BlockHeaders")
-    
-    # Assemble the message (with any of our modifications)
-    msg = h.assemble_msg(msg_components)
-    
-    # Send the message
-    res = h.send_msg(msg)
-    
-    print("INFO: response -> %s" % res)
-    
-    # Close the node connection
-    h.disconnect()
-    
 
 if __name__ == "__main__":
     test_getheaders()
