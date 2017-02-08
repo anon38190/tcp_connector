@@ -5,10 +5,11 @@ DEFAULT_HASH_SIZE = 28
 PUB_KEY_SIZE = 32
 DEFAULT_SIGNATURE_SIZE = 64
 PROTOCOL_VER_SIZE = 5
-VERSION_MAGIC = 16842752
+#VERSION_MAGIC = 16842752
+VERSION_MAGIC = 0
 
 BID_TRANS = ["SysStartReq", "GetHeaders", "GetBlocks", "VersionReq", "PeerState"]
-UND_TRANS = ["SysStartResponse"]
+UND_TRANS = ["SysStartResponse", "VersionResp"]
 
 # Structures
 DATA_MSG = Struct("lwcid" / Int32ub,
@@ -52,6 +53,9 @@ TIMESTAMP = Struct("size" / Int8ub,
 SYSSTARTRESPONSE = Struct("vers_magic" / Int32ub,
                           "protocol_vers" / Array(PROTOCOL_VER_SIZE, Byte),
                           "timestamp" / Embedded(TIMESTAMP))
+                          
+VERSIONRESP = Struct("vers_magic" / Int32ub,
+                     "protocol_vers" / Array(PROTOCOL_VER_SIZE, Byte))
 
 
 

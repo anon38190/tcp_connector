@@ -57,6 +57,8 @@ class ApplicationLayer(TimeWarpLayer):
             msg = self.set_peerstate_args(**kwargs)
         elif msg_type == "SysStartResponse":
             msg = self.set_sysstartresponse_args(**kwargs)
+        elif msg_type == "VersionResp":
+            msg = self.set_versionresp_args(**kwargs)
         else:
             print("ERROR: unsupported message type: %s" % msg_type)
             
@@ -114,5 +116,13 @@ class ApplicationLayer(TimeWarpLayer):
                                            protocol_vers = kwargs["protocol_version"],
                                            size = len(ts),
                                            timestamp = ts))
+                                           
+    def set_versionresp_args(self, **kwargs):
+        """
+        """
+        return VERSIONRESP.build(dict(vers_magic = VERSION_MAGIC,
+                                      protocol_vers = kwargs["protocol_version"]))
+        
+        
         
         

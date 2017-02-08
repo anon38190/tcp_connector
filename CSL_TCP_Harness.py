@@ -215,7 +215,28 @@ def test_sysstartresponse():
     
     # Close the node connection
     h.disconnect()
+    
+def test_versionresp():
+    """
+    """
+    # Create the harness instance
+    h = Harness()
+    
+    # Connect to a node
+    h.connect("127.0.0.1", 3000, 0)
+    
+    # Generate a "SysStartResponse" message
+    msg_components = h.generate_msg(msg_type = "VersionResp",
+                                    protocol_version = [0x00, 0x00, 0x00, 0x00, 0x00])
+    
+    # Assemble the message (with any of our modifications)
+    msg = h.assemble_msg(msg_components)
+    
+    # Send the message
+    h.send_msg("VersionResp", msg)
+    
+    # Close the node connection
+    h.disconnect()
 
 if __name__ == "__main__":
-    test_sysstartrequest()
-    #test_sysstartresponse()
+    test_versionresp()
