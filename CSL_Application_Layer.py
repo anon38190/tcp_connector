@@ -2,6 +2,7 @@ from CSL_Time_Warp_Layer import TimeWarpLayer
 from CSL_Status_Codes import *
 
 from CSL_Structures import *
+from datetime import datetime
 
 class ApplicationLayer(TimeWarpLayer):
     """
@@ -54,6 +55,8 @@ class ApplicationLayer(TimeWarpLayer):
             msg = self.set_getheaders_args(**kwargs)
         elif msg_type == "PeerState":
             msg = self.set_peerstate_args(**kwargs)
+        elif msg_type == "SysStartResponse":
+            msg = self.set_sysstartresponse_args(**kwargs)
         else:
             print("ERROR: unsupported message type: %s" % msg_type)
             
@@ -97,4 +100,19 @@ class ApplicationLayer(TimeWarpLayer):
         if not kwargs["protocolversion"]:
             return PEERSTATE.build(dict())
         else:
-            return PEERSTATE_VER.build(dict(protocolversion = kwargs["protocolversion"]))        
+            return PEERSTATE_VER.build(dict(protocolversion = kwargs["protocolversion"]))
+            
+    def set_sysstartresponse_args(self, **kwargs):
+        """
+        """
+        # Get a timestamp
+        dt = datetime.now().microsecond
+        ts = dt.to_bytes((dt.bit_length() + 7) // 8, byteorder="big")
+        
+        #TODO: does this magic value ever change?
+        return SYSSTARTRESPONSE.build(dict(vers_magic = VERSION_MAGIC,
+                                           protocol_vers = kwargs["protocol_version"],
+                                           size = len(ts),
+                                           timestamp = ts))
+        
+        

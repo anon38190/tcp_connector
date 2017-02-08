@@ -62,11 +62,11 @@ def send_msg_dec(func):
     """
     """
     
-    def func_wrapper(self, msg):
+    def func_wrapper(self, msg_type, msg):
         """
         """
         # Send the message
-        res = self.transport_msg(msg)
+        res = self.transport_msg(msg_type, msg)
         
         return res
             

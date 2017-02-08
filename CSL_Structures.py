@@ -4,8 +4,11 @@ from construct import *
 DEFAULT_HASH_SIZE = 28
 PUB_KEY_SIZE = 32
 DEFAULT_SIGNATURE_SIZE = 64
-
 PROTOCOL_VER_SIZE = 5
+VERSION_MAGIC = 16842752
+
+BID_TRANS = ["SysStartReq", "GetHeaders", "GetBlocks", "VersionReq", "PeerState"]
+UND_TRANS = ["SysStartResponse"]
 
 # Structures
 DATA_MSG = Struct("lwcid" / Int32ub,
@@ -41,3 +44,14 @@ PROTOCOL_VERSION = Struct("pvMajor" / Int16ub, "pvMinor" / Int16ub, "pvAlt" / In
 PEERSTATE_VER = Struct("protocolversion" / Array(PROTOCOL_VER_SIZE, Byte))
 
 PEERSTATE = Struct()
+
+#TODO: Don't see any of this in the documentation, might be wrong...
+TIMESTAMP = Struct("size" / Int8ub,
+                   "timestamp" / Array(this.size, Byte))
+
+SYSSTARTRESPONSE = Struct("vers_magic" / Int32ub,
+                          "protocol_vers" / Array(PROTOCOL_VER_SIZE, Byte),
+                          "timestamp" / Embedded(TIMESTAMP))
+
+
+

@@ -150,7 +150,7 @@ class NetworkTransportLayer:
             
         return msg_components
         
-    def transport_msg(self, msg):
+    def transport_msg(self, msg_type, msg):
         """
         """
         follow_up = False
@@ -158,7 +158,10 @@ class NetworkTransportLayer:
         # Send the message
         self.conn.send(msg)
         
-        # Get a response
+        # Terminate if sending a unidirectional message
+        if msg_type in UND_TRANS:
+            return None
+        
         res = self.conn.recv(1024)
         
         #TODO: add handling for different response types

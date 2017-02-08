@@ -73,7 +73,7 @@ def test_peerstate():
     msg = h.assemble_msg(msg_components)
     
     # Send the message
-    res = h.send_msg(msg)
+    res = h.send_msg("PeerState", msg)
     
     print("INFO: response -> %s" % res)
     
@@ -104,7 +104,7 @@ def test_getheaders():
     msg = h.assemble_msg(msg_components)
     
     # Send the message
-    res = h.send_msg(msg)
+    res = h.send_msg("GetHeaders", msg)
     
     print("INFO: response -> %s" % res)
     
@@ -131,7 +131,7 @@ def test_versionreq():
     msg = h.assemble_msg(msg_components)
     
     # Send the message
-    res = h.send_msg(msg)
+    res = h.send_msg("VersionReq", msg)
     
     print("INFO: response -> %s" % res)
     
@@ -158,7 +158,7 @@ def test_sysstartrequest():
     msg = h.assemble_msg(msg_components)
     
     # Send the message
-    res = h.send_msg(msg)
+    res = h.send_msg("SysStartRequest", msg)
     
     print("INFO: response -> %s" % res)
     
@@ -187,12 +187,35 @@ def test_getblocks():
     msg = h.assemble_msg(msg_components)
     
     # Send the message
-    res = h.send_msg(msg)
+    res = h.send_msg("GetBlocks", msg)
     
     print("INFO: response -> %s" % res)
     
     # Close the node connection
     h.disconnect()
+    
+def test_sysstartresponse():
+    """
+    """
+    # Create the harness instance
+    h = Harness()
+    
+    # Connect to a node
+    h.connect("127.0.0.1", 3000, 0)
+    
+    # Generate a "SysStartResponse" message
+    msg_components = h.generate_msg(msg_type = "SysStartResponse",
+                                    protocol_version = [0x00, 0x00, 0x00, 0x00, 0x00])
+    
+    # Assemble the message (with any of our modifications)
+    msg = h.assemble_msg(msg_components)
+    
+    # Send the message
+    h.send_msg("SysStartResponse", msg)
+    
+    # Close the node connection
+    h.disconnect()
 
 if __name__ == "__main__":
-    test_getheaders()
+    test_sysstartrequest()
+    #test_sysstartresponse()

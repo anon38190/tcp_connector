@@ -18,7 +18,8 @@ class TimeWarpLayer(NetworkTransportLayer):
                                     "GetBlocks":0x53,
                                     "VersionReq":0x53,
                                     "GetHeaders":0x53,
-                                    "PeerState":0x53}
+                                    "PeerState":0x53,
+                                    "SysStartResponse":0x55}
         
     def get_control_code(self, msg_type):
         """
@@ -45,7 +46,7 @@ class TimeWarpLayer(NetworkTransportLayer):
         if (c_code == 0x53 or c_code == 0x41):
             nonce_value = self.generate_nonce()
             return BID_CONTROL_HEADER.build(dict(cc = c_code, nonce = nonce_value))        
-        elif (c_code == "0x55"):
+        elif (c_code == 0x55):
             return UND_CONTROL_HEADER.build(dict(cc = c_code))
         else:
             print("Unsupported control code: %s" % c_code)
