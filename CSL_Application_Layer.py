@@ -79,10 +79,17 @@ class ApplicationLayer(TimeWarpLayer):
     def set_getheaders_args(self, **kwargs):
         """
         """
+        # Assemble the list of old hashes
+        old_hash_list = []
+        hash_count  = 0;
+        for h in kwargs["old_hashes"]:
+            old_hash_list = old_hash_list + h
+            hash_count += 1
+        
         if not kwargs["new_hash"]:
-            return GETHEADERS_SINGLE.build(dict(old_hash = kwargs["old_hash"]))
+            return GETHEADERS_SINGLE.build(dict(count = hash_count, old_hashes = old_hash_list))
         else:
-            return GETHEADERS_RANGE.build(dict(old_hash = kwargs["old_hash"], new_hash = kwargs["new_hash"]))
+            return GETHEADERS_RANGE.build(dict(count = hash_count, old_hashes = old_hash_list, new_hash = kwargs["new_hash"]))
             
     def set_peerstate_args(self, **kwargs):
         """
@@ -90,8 +97,4 @@ class ApplicationLayer(TimeWarpLayer):
         if not kwargs["protocolversion"]:
             return PEERSTATE.build(dict())
         else:
-            return PEERSTATE_VER.build(dict(protocolversion = kwargs["protocolversion"]))
-        
-
-        
-        
+            return PEERSTATE_VER.build(dict(protocolversion = kwargs["protocolversion"]))        

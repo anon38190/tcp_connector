@@ -1,7 +1,10 @@
 from construct import *
 
 # Constants
-HEADER_HASH_SIZE = 28
+DEFAULT_HASH_SIZE = 28
+PUB_KEY_SIZE = 32
+DEFAULT_SIGNATURE_SIZE = 64
+
 PROTOCOL_VER_SIZE = 5
 
 # Structures
@@ -17,18 +20,20 @@ UND_CONTROL_HEADER = Struct("cc" / Int8ub)
 ENC_SMALL_MSG = Struct("size" / Int8ub,
                        "msg" / Array(this.size, Byte))
 
-GETBLOCKS = Struct("old_hash" / Array(HEADER_HASH_SIZE, Byte),
-                   "new_hash" / Array(HEADER_HASH_SIZE, Byte))
+GETBLOCKS = Struct("old_hash" / Array(DEFAULT_HASH_SIZE, Byte),
+                   "new_hash" / Array(DEFAULT_HASH_SIZE, Byte))
                    
 SYSSTARTREQUEST = Struct("null" / Byte)
 
 VERSIONREQ = Struct()
 
-#TODO: investigate way to handle optional parameters...
-GETHEADERS_RANGE = Struct("old_hash" / Array(HEADER_HASH_SIZE, Byte),
-                          "new_hash" / Array(HEADER_HASH_SIZE, Byte))
+GETHEADERS_RANGE = Struct("count" / Int8ub,
+                          "old_hashes" / Array(this.count * DEFAULT_HASH_SIZE, Byte),
+                          "new_hash" / Array(DEFAULT_HASH_SIZE, Byte))
                           
-GETHEADERS_SINGLE = Struct("old_hash" / Array(HEADER_HASH_SIZE, Byte))
+GETHEADERS_SINGLE = Struct("count" / Int8ub,
+                           "old_hashes" / Array(this.count * DEFAULT_HASH_SIZE, Byte),
+                           "new_hash" / Default(Byte, 0x00))
 
 PROTOCOL_VERSION = Struct("pvMajor" / Int16ub, "pvMinor" / Int16ub, "pvAlt" / Int8ub)
 
