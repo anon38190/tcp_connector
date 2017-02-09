@@ -129,13 +129,17 @@ class NetworkTransportLayer:
         """
         """
         msg_components = []
+        msg_data_chunks = []
         
+        # Split the message components on 0x100 byte boundaries
+        msg_data_chunks = [msg_data[i:i + DATA_MAX] for i in range(0, len(msg_data), DATA_MAX)]
+            
         # Build the control header message
         if control_header is not None:
             control_header_msg = DATA_MSG.build(dict(lwcid = self.lwc_id, size = len(control_header), msg = control_header))
             #msg_components["control_header"] = control_header_msg
             msg_components.append(control_header_msg)
-        
+            
         # Build the message name message
         if msg_type is not None:
             msg_type_msg = DATA_MSG.build(dict(lwcid = self.lwc_id, size = len(msg_type), msg = msg_type))
@@ -144,9 +148,10 @@ class NetworkTransportLayer:
         
         # Build the message data message
         if msg_data is not None:
-            msg_data_msg = DATA_MSG.build(dict(lwcid = self.lwc_id, size = len(msg_data), msg = msg_data))
-            #msg_components["msg_data"] = msg_data_msg
-            msg_components.append(msg_data_msg)
+            for chunk in msg_data_chunks:    
+                msg_data_msg = DATA_MSG.build(dict(lwcid = self.lwc_id, size = len(chunk), msg = chunk))
+                #msg_components["msg_data"] = msg_data_msg
+                msg_components.append(msg_data_msg)
             
         return msg_components
         

@@ -59,6 +59,8 @@ class ApplicationLayer(TimeWarpLayer):
             msg = self.set_sysstartresponse_args(**kwargs)
         elif msg_type == "VersionResp":
             msg = self.set_versionresp_args(**kwargs)
+        elif msg_type == "BlockHeaders":
+            msg = self.set_blockheaders_args(**kwargs)
         else:
             print("ERROR: unsupported message type: %s" % msg_type)
             
@@ -123,6 +125,48 @@ class ApplicationLayer(TimeWarpLayer):
         return VERSIONRESP.build(dict(vers_magic = VERSION_MAGIC,
                                       protocol_vers = kwargs["protocol_version"]))
         
+    def set_blockheaders_args(self, **kwargs):
+        """
+        """
+        # Build the GodTossing proof
+        if (kwargs["gt_tag"] == 0):
+            gt = COMMITMENTS_PROOF.build(dict(hash_commitments_map = kwargs["hash_commitments_map"], 
+                                              hash_vss_cert_map = kwargs["hash_vss_cert_map"]))
+        elif (kwargs["gt_tag"] == 1):
+            gt = OPENINGS_PROOF.build(dict(hash_openings_map = kwargs["hash_openings_map"], 
+                                           hash_vss_cert_map = kwargs["hash_vss_cert_map"]))
+        elif (kwargs["gt_tag"] == 2):
+            gt = SHARES_PROOF.build(dict(hash_shares_map = kwargs["hash_shares_map"], 
+                                         hash_vss_cert_map = kwargs["hash_vss_cert_map"]))
+        elif (kwargs["gt_tag"] == 3):
+            gt = CERTIFICATES_PROOF.build(dict(hash_vss_vert_map = kwargs["hash_vss_vert_map"]))
+        else:
+            print("ERROR: unsupported GT tag: %s" % kwargs["gt_tag"])
+            return None
+            
+        ## Build the block version
+        #bv = BLOCK_VERSION.build(dict(major = MAJ_VER, minor = MIN_VER, alt = ALT_VER))    
+            
+        ## Build the software version
+        #sv = SOFTWARE_VERSION.build(dict(length = len(SOFTWARE_VER), name = SOFTWARE_VER))
         
-        
-        
+        return MAIN_BLOCK_HEADER.build(dict(prot_magic = VERSION_MAGIC,
+                                       header_hash = kwargs["header_hash"],
+                                       mp_number = kwargs["mp_number"],
+                                       mr_hash = kwargs["mp_root_hash"],
+                                       mp_witnesses_hash = kwargs["mp_wit_hash"],
+                                       tag = kwargs["gt_tag"],
+                                       gt_data = gt,
+                                       mp_proxy_sks_proof = kwargs["mp_proxy_sk_proof_hash"],
+                                       mp_update_proof = kwargs["mp_update_proof_hash"],
+                                       epoch_index = kwargs["epoch_index"],
+                                       slot_index = kwargs["slot_index"],
+                                       pub_key = kwargs["mcd_leader_key"],
+                                       mcd_difficulty = kwargs["mcd_diff"],
+                                       mcd_signature = kwargs["mcd_sig"],
+                                       major = MAJ_VER,
+                                       minor = MIN_VER,
+                                       alt = ALT_VER,
+                                       length = len(SOFTWARE_VER),
+                                       name = SOFTWARE_VER.encode()))
+

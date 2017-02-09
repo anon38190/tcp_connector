@@ -20,7 +20,8 @@ class TimeWarpLayer(NetworkTransportLayer):
                                     "GetHeaders":0x53,
                                     "PeerState":0x53,
                                     "SysStartResponse":0x55,
-                                    "VersionResp":0x55}
+                                    "VersionResp":0x55,
+                                    "BlockHeaders":0x53}
         
     def get_control_code(self, msg_type):
         """
