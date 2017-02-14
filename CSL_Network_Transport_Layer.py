@@ -2,7 +2,7 @@
 #TODO: update create and close LWC to use construct
 
 from CSL_Status_Codes import *
-
+#from construct import *
 from CSL_Structures import *
 import socket
 import random
@@ -125,15 +125,22 @@ class NetworkTransportLayer:
         
         return closed
         
-    def format_msg(self, control_header = None, msg_type = None, msg_data = None):
+    #TODO: use kwargs here    
+    def format_msg(self, peer_data = None, control_header = None, msg_type = None, msg_data = None):
         """
         """
         msg_components = []
-        msg_data_chunks = []
+        #TODO: chunking appears disabled with the latest version
+        msg_data_chunks = [msg_data]
         
-        # Split the message components on 0x100 byte boundaries
-        msg_data_chunks = [msg_data[i:i + DATA_MAX] for i in range(0, len(msg_data), DATA_MAX)]
+        ## Split the message components on 0x100 byte boundaries
+        #msg_data_chunks = [msg_data[i:i + DATA_MAX] for i in range(0, len(msg_data), DATA_MAX)]
             
+        # Build the peer data message
+        if peer_data is not None:
+            peer_data_msg = DATA_MSG.build(dict(lwcid = self.lwc_id, size = len(peer_data), msg = peer_data))
+            msg_components.append(peer_data_msg)
+        
         # Build the control header message
         if control_header is not None:
             control_header_msg = DATA_MSG.build(dict(lwcid = self.lwc_id, size = len(control_header), msg = control_header))
@@ -142,6 +149,8 @@ class NetworkTransportLayer:
             
         # Build the message name message
         if msg_type is not None:
+            # Get the correct constant
+            #msg_type_const = MSG_NAME_ENC.build(dict(msg_name = MSG_NAME_MAP[msg_type]))
             msg_type_msg = DATA_MSG.build(dict(lwcid = self.lwc_id, size = len(msg_type), msg = msg_type))
             #msg_components["msg_type"] = msg_type_msg
             msg_components.append(msg_type_msg)
@@ -159,6 +168,7 @@ class NetworkTransportLayer:
         """
         """
         follow_up = False
+        responses = {}
         
         # Send the message
         self.conn.send(msg)
@@ -168,6 +178,7 @@ class NetworkTransportLayer:
             return None
         
         res = self.conn.recv(1024)
+        responses["status"] = res
         
         #TODO: add handling for different response types
         # Check the response
@@ -175,14 +186,16 @@ class NetworkTransportLayer:
             if res[-4] != self.lwc_id.to_bytes(4, byteorder="big"):
                 # Bidirectional
                 self.bid_lwc_id = int.from_bytes(res[-4:], byteorder="big")
+                # Accept the peer data
+                #responses["peer_data"] = self.conn.recv(8192)
                 # Expect another message
                 follow_up = True
         
         # Get follow-up based on response
         if follow_up:
-            res = self.conn.recv(8192)
+            responses["res"] = self.conn.recv(8192)
             
-        return res
+        return responses
         
         
         

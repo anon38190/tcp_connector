@@ -1,20 +1,31 @@
 from construct import *
 
 # Constants
-DEFAULT_HASH_SIZE = 28
+DEFAULT_HASH_SIZE = 32
 PUB_KEY_SIZE = 32
 DEFAULT_SIGNATURE_SIZE = 64
-PROTOCOL_VER_SIZE = 5
 VERSION_MAGIC = 16842752
-#VERSION_MAGIC = 0
+PROTOCOL_MAGIC = 0
 MAJ_VER = 0
 MIN_VER = 0
 ALT_VER = 0
 SOFTWARE_VER = "cardano"
 DATA_MAX = 0x100
+DEFAULT_NONCE_SIZE = 14
 
-BID_TRANS = ["SysStartReq", "GetHeaders", "GetBlocks", "VersionReq", "PeerState", "BlockHeaders"]
+BID_TRANS = ["SysStartRequest", "GetHeaders", "GetBlocks", "VersionReq", "PeerState", "BlockHeaders"]
 UND_TRANS = ["SysStartResponse", "VersionResp"]
+
+MSG_NAME_MAP = {"SysStartRequest":1001,
+                "GetHeaders":4,
+                "GetBlocks":6,
+                "VersionReq":None,
+                "PeerState":None,
+                "BlockHeaders":5,
+                "SysStartResponse":1002,
+                "VersionResp":None}
+                
+ENC_DATA = Struct("enc_data" / VarInt)
 
 # Structures
 DATA_MSG = Struct("lwcid" / Int32ub,
@@ -25,9 +36,6 @@ BID_CONTROL_HEADER = Struct("cc" / Byte,
                             "nonce" / Int64ub)
                             
 UND_CONTROL_HEADER = Struct("cc" / Int8ub)
-
-ENC_SMALL_MSG = Struct("size" / Int8ub,
-                       "msg" / Array(this.size, Byte))
 
 GETBLOCKS = Struct("old_hash" / Array(DEFAULT_HASH_SIZE, Byte),
                    "new_hash" / Array(DEFAULT_HASH_SIZE, Byte))
@@ -44,10 +52,10 @@ GETHEADERS_SINGLE = Struct("count" / Int8ub,
                            "old_hashes" / Array(this.count * DEFAULT_HASH_SIZE, Byte),
                            "new_hash" / Default(Byte, 0x00))
 
-PROTOCOL_VERSION = Struct("pvMajor" / Int16ub, "pvMinor" / Int16ub, "pvAlt" / Int8ub)
+PROTOCOL_VERSION = Struct("pv_major" / Int16ub, "pv_minor" / Int16ub, "pv_alt" / Int8ub)
 
 #TODO: investigate way to handle optional parameters...
-PEERSTATE_VER = Struct("protocolversion" / Array(PROTOCOL_VER_SIZE, Byte))
+PEERSTATE_VER = Struct(Embedded(PROTOCOL_VERSION))
 
 PEERSTATE = Struct()
 
@@ -56,11 +64,11 @@ TIMESTAMP = Struct("size" / Int8ub,
                    "timestamp" / Array(this.size, Byte))
 
 SYSSTARTRESPONSE = Struct("vers_magic" / Int32ub,
-                          "protocol_vers" / Array(PROTOCOL_VER_SIZE, Byte),
+                          Embedded(PROTOCOL_VERSION),
                           "timestamp" / Embedded(TIMESTAMP))
                           
 VERSIONRESP = Struct("vers_magic" / Int32ub,
-                     "protocol_vers" / Array(PROTOCOL_VER_SIZE, Byte))
+                     Embedded(PROTOCOL_VERSION))
 
 ATTRIBUTES = Struct("size" / Int32ub,
                     "data" / Array(this.size, Byte))
@@ -127,4 +135,11 @@ MAIN_BLOCK_HEADER = Struct("prot_magic" / Int32ub,
                            Embedded(MAIN_PROOF),
                            Embedded(MAIN_CONSENSUS_DATA),
                            Embedded(MAIN_EXTRA_HEADER_DATA))
+
+#TODO: this is temporary until this data structure is documented
+HANDLER_LIST_SIZE = 192
+PEER_DATA = Struct("nonce" / Array(DEFAULT_NONCE_SIZE, Byte),
+                   "protocol_magic" / Int32ub,
+                   Embedded(BLOCK_VERSION),
+                   "handler_list" / Array(HANDLER_LIST_SIZE, Byte)) # Just throw everything in here...
 

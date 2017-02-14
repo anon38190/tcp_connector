@@ -14,30 +14,35 @@ class ApplicationLayer(TimeWarpLayer):
         super().__init__()
 
     # TODO: don't know if this belongs at the application layer
-    def encode_msg(self, msg_type):
+    def encode_msg(self, msg_data):
         """
         """
-        encoded_msg_name = None
+        encoded_msg_data = None
         
         # determine encoding handling based on the length of the message
         # type
-        if len(msg_type) < 0x80:
-            encoded_msg_name = self.byte_encode_message(msg_type)
-        else:
-            encoded_msg_name = self.var_encode_message(msg_type)
-            
-        return encoded_msg_name
+        #if len(msg_type) < 0x80:
+        #    encoded_msg_name = self.byte_encode_message(msg_type)
+        #else:
+        #    encoded_msg_name = self.var_encode_message(msg_type)
         
-    def byte_encode_message(self, msg_type):
-        """
-        """ 
-        return ENC_SMALL_MSG.build(dict(size = len(msg_type), msg = msg_type.encode()))
+        if msg_data is not None:
+            encoded_msg_data = self.var_encode_message_data(msg_data)    
+        
+        return encoded_msg_data
+        
+    #def byte_encode_message(self, msg_type):
+        #"""
+        #""" 
+        #return ENC_SMALL_MSG.build(dict(size = len(msg_type), msg = msg_type.encode()))
+        #return MSG_NAME_ENC.build(dict(msg_type = MSG_NAME_MAP[msg_type]))
            
-    def var_encode_message(self, msg_type):
+    def var_encode_message_data(self, msg_data):
         """
         """
-        #TODO: implement
-    
+        enc_msg_data = ENC_DATA.build(dict(enc_data = msg_data))
+        return b"%s%s" % (len(enc_msg_data).to_bytes(1, byteorder="big"), enc_msg_data)
+        
     def build_arg_dict(self, **kwargs):
         """
         """
@@ -101,10 +106,8 @@ class ApplicationLayer(TimeWarpLayer):
     def set_peerstate_args(self, **kwargs):
         """
         """
-        if not kwargs["protocolversion"]:
-            return PEERSTATE.build(dict())
-        else:
-            return PEERSTATE_VER.build(dict(protocolversion = kwargs["protocolversion"]))
+        #TODO: PeerState doesn't require the protocol version
+        return PEERSTATE_VER.build(dict(pv_major = MAJ_VER, pv_minor = MIN_VER, pv_alt = ALT_VER))
             
     def set_sysstartresponse_args(self, **kwargs):
         """
@@ -115,7 +118,9 @@ class ApplicationLayer(TimeWarpLayer):
         
         #TODO: does this magic value ever change?
         return SYSSTARTRESPONSE.build(dict(vers_magic = VERSION_MAGIC,
-                                           protocol_vers = kwargs["protocol_version"],
+                                           pv_major = MAJ_VER, 
+                                           pv_minor = MIN_VER, 
+                                           pv_alt = ALT_VER,
                                            size = len(ts),
                                            timestamp = ts))
                                            
@@ -123,7 +128,9 @@ class ApplicationLayer(TimeWarpLayer):
         """
         """
         return VERSIONRESP.build(dict(vers_magic = VERSION_MAGIC,
-                                      protocol_vers = kwargs["protocol_version"]))
+                                      pv_major = MAJ_VER, 
+                                      pv_minor = MIN_VER, 
+                                      pv_alt = ALT_VER))
         
     def set_blockheaders_args(self, **kwargs):
         """
