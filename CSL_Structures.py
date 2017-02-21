@@ -1,3 +1,5 @@
+import binascii
+
 from construct import *
 
 # Constants
@@ -29,7 +31,7 @@ MSG_NAME_MAP = {"SysStartRequest":1001,
                 "BlockHeaders":5,
                 "SysStartResponse":1002,
                 "VersionResp":None}
-                
+
 ENC_DATA = Struct("enc_data" / VarInt)
 
 #######################
@@ -52,9 +54,14 @@ def Maybe(a):
     return Struct("tag" / Int8ub,
                   "from_just" / Switch(this.tag,
                   {
-                    0: Terminated,  # TODO: avoid specify `fromJust=None` if tag=0
+                    0: Terminated,
                     1: a
                   }))
+
+# Maybe constructors
+Nothing = dict(tag=0, from_just=None)  # TODO: avoid specify `fromJust=None` if tag=0
+def Just(x):
+    return dict(tag=1, from_just=x)
 
 def List(a):
     return PrefixedArray(VarInt, a)
@@ -63,26 +70,58 @@ def List(a):
 # BASIC CARDANO
 #######################
 
-# TODO: some hardcore here...
-COIN = Struct()
-
 HASH = Array(DEFAULT_HASH_SIZE, Byte)
 PUBLIC_KEY = Array(DEFAULT_PUBLIC_KEY_SIZE, Byte)
 SIGNATURE = Array(DEFAULT_SIGNATURE_SIZE, Byte)
+ADDRESS_HASH = Array(DEFAULT_ADDRESS_HASH_SIZE, Byte)
+
+# TODO: support full coin serialization
+# now only 1000 ADA = \x00\x64 is supported
+COIN = OneOf(
+    ExprAdapter(Int16ub,
+        encoder=lambda obj, ctx: 100,
+        decoder=lambda obj, ctx: 1000 if obj == 100 else None),
+    [1000])
 
 SLOT_ID = "epoch_index" / VarInt + \
           "slot_index" / VarInt
 
 EMPTY_ATTRIBUTES = List(Byte)
 
-# TODO: describe SCRIPT
-SCRIPT = Struct()
+SCRIPT = "version"/VarInt + "script"/List(Byte)
 
-# TODO: describe AddressAttributes
-ADDRESS_ATTRIBUTES = Struct()
+# TODO: now only construction (w/o parsing and w/o non-empty data)
+def pk_address_attrs(remain, data=Nothing):
+    if data != Nothing:
+        raise ValueError("only empty attributes supported in ADDRESS_ATTRIBUTES", data)
+    remain_len = VarInt.build(len(remain))
+    return b'%s%s' % (remain_len, remain)
 
-# TODO: describe Address
-ADDRESS = Struct()
+# >>> ADDRESS_ATTRIBUTES.build(b"hello")
+# b'\x05hello'
+ADDRESS_ATTRIBUTES = ExprAdapter(GreedyBytes,
+    encoder=lambda obj, ctx: pk_address_attrs(obj),
+    decoder=lambda obj, ctx: None)  # TODO: parsing is not supported
+
+# >>> ADDRESS.build(dict(tag=0,
+#                        key_hash=bytearray.fromhex("380dea393a631ad563154a13bc5ee49fa4b62a60218358b5dcb875e0"),
+#                        pk_attrs=b"a"))
+# b'\x00\x1e8\r\xea9:c\x1a\xd5c\x15J\x13\xbc^\xe4\x9f\xa4\xb6*`!\x83X\xb5\xdc\xb8u\xe0\x01a\xcfR\xc5\xec'
+ADDRESS = Struct("tag" / Int8ub,
+                 Embedded(Switch(this.tag,
+                 {
+                   0: Struct("size" / Const(b"\x1e"),  # TODO: should be length of key_hash + pk_attrs
+                             "key_hash" / ADDRESS_HASH,
+                             "pk_attrs" / ADDRESS_ATTRIBUTES),
+                   1: Struct("size" / Const("\x1C"),
+                             "script_hash" / ADDRESS_HASH)
+                   # TODO: UnknownAddress
+                 })),
+                 # TODO: put into each constructor
+                 "checksum" / Checksum(Bytes(4),
+                                       lambda data: binascii.crc32(data),
+                                       lambda ctx: (Int8ub >> Const(b"\x1e") >> ADDRESS_HASH >> ADDRESS_ATTRIBUTES).build(
+                                                    [ctx.tag, None, ctx.key_hash, ctx.pk_attrs])))
 
 MERKLE_ROOT = HASH
 
@@ -93,6 +132,11 @@ MERKLE_ROOT = HASH
 TX_IN = "hash" / HASH + \
         "index" / VarInt
 
+# >>> TX_OUT.build(dict(address=dict(tag=0,
+#                                    key_hash=bytearray.fromhex("380dea393a631ad563154a13bc5ee49fa4b62a60218358b5dcb875e0"),
+#                                    pk_attrs=b"a"),
+#                       out_value=1000))
+# b'\x00\x1e8\r\xea9:c\x1a\xd5c\x15J\x13\xbc^\xe4\x9f\xa4\xb6*`!\x83X\xb5\xdc\xb8u\xe0\x01a\xcfR\xc5\xec\x00d'
 TX_OUT = "address" / ADDRESS + \
          "out_value" / COIN
 
@@ -121,8 +165,12 @@ TRANSACTION = Struct("inputs" / List(TX_IN),
                      "outputs" / List(TX_OUT),
                      "attributes" / EMPTY_ATTRIBUTES)
 
-# TODO: describe distribution serialization logic
-TX_DISTRIBUTION = Struct()
+TX_DISTRIBUTION = Struct("tag" / Int8ub,
+                         Embedded(Switch(this.tag,
+                         {
+                             0: "number" / VarInt,
+                             1: "distr" / List(Pair(HASH, COIN))
+                         })))
 
 TX_AUX = Struct("tx" / TRANSACTION,
                 "witness" / TX_WITNESS,
