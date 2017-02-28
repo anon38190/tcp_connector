@@ -75,6 +75,7 @@ PUBLIC_KEY = Array(DEFAULT_PUBLIC_KEY_SIZE, Byte)
 SIGNATURE = Array(DEFAULT_SIGNATURE_SIZE, Byte)
 ADDRESS_HASH = Array(DEFAULT_ADDRESS_HASH_SIZE, Byte)
 
+# TODO: support 32333 ADA = \x00\xc5\x15\xae
 # TODO: support full coin serialization
 # now only 1000 ADA = \x00\x64 is supported
 COIN = OneOf(
