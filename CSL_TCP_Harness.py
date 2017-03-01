@@ -43,7 +43,7 @@ class Harness(ApplicationLayer):
         for c in msg_components:
             msg = b"%s%s" % (msg, c)
             
-        #print(msg)    
+        #print(msg)
         return msg
             
     @CSL_Layers.send_msg_dec
@@ -284,7 +284,66 @@ def test_blockheaders():
     
     # Close the node connection
     h.disconnect()
-    
+
+# TODO: refactor our Harness, connect and close into some separate function
+def test_transaction_sending():
+    """
+    This tests sending 1000 ADA (other amount of coins is not supported yet)
+    from 1g5ABq1bSWW4eiWprT9rbL7LPpvmdQhbbXnJPLt6v3i43Kq to 1fPHmFcxDxJNCfe38k2KEhowvPSnRx7eJ2wmetB5qg56eGd.
+
+    > Textual transaction description:
+    (Tx {_txInputs = [ TxIn {txInHash = AbstractHash d473dc79128f7aa501424f1dfce91f859ac1883ab06f00081f68125491293d89
+                            , txInIndex = 0}]
+        , _txOutputs = [TxOut {txOutAddress = PubKeyAddress
+                                 {addrKeyHash = AbstractHash cc91b4a1e61295a848ffe3f73d82319c44c0bd9cf44ab5fad7dd90ae
+                                 , addrPkAttributes = Attributes { data: AddrPkAttrs {addrPkDerivationPath = Nothing}}}
+                              , txOutValue = Coin {getCoin = 33332}}
+                              ,TxOut {txOutAddress = PubKeyAddress
+                                 {addrKeyHash = AbstractHash 465b5cc3c08a9eb4456e36ea1e8e36cd8c148b7a26e88fd321f3fbf2
+                                 , addrPkAttributes = Attributes { data: AddrPkAttrs {addrPkDerivationPath = Nothing}}}
+                                 , txOutValue = Coin {getCoin = 1}}]
+        , _txAttributes = Attributes { data: () }}
+    , [PkWitness {
+        twKey = PublicKey (PublicKey {unPublicKey = "2X\164\141U\236e\129\&4\232D\GS\255\194*Z\212\180\188\164%\208\173\162\FS\136\ETX\131\SI\199E\v"})
+        , twSig = Signature (Signature {unSignature = "L&\160\191]\156\FS\211\143\214qy!L\142,\132\175$\224\165\DC1\a\216[\146\SOH\GS\ACK\246n\"\176z\175\175N\245c%A\146\236\170\"\184\SI1[h\245\&4`\135H\rf8\185#9\190@\n"})}]
+    , TxDistribution {getTxDistribution = [[],[]]})
+
+    > Binary translation:
+    01d473dc79128f7aa501424f1dfce91f859ac1883ab06f00081f68125491293d890002001dcc91b4a1e61295a848ffe3f73d82319c44c0bd9cf
+    44ab5fad7dd90ae008fff609400c515ae001d465b5cc3c08a9eb4456e36ea1e8e36cd8c148b7a26e88fd321f3fbf200fdd46e26006400010060
+    3258a48d55ec658134e8441dffc22a5ad4b4bca425d0ada21c8803830fc7450b06af427d5152b638d551610399ee342337421d087bd722491c9
+    6683a735eebd1d515bb2ce17269478c1894c3a6480b7770850febc4fc6080672b81d0e0667d060002
+
+    TODO: map binary to physical data
+
+    To send transaction:
+        1. Send: InvMsg(8) ++ TxMsgTag(0)
+        2. Receive: ReqMsg(9) ++ TxMsgTag(0)
+        3. Send: DataMsg(10) ++ TxMsgContents(0)
+    """
+    # Create the harness instance
+    h = Harness()
+
+    # Connect to a node
+    h.connect("127.0.0.1", 3000, 0)
+
+    # Generate a "Tx" message
+    tx_msg_type = "Tx"
+    msg_components = h.generate_msg(msg_type=tx_msg_type)  # TODO: fill rest
+
+    # Modify the message here (for testing)
+    # See https://construct.readthedocs.io/en/latest/basics.html#fields for how
+    # to parse, mutate, then rebuild a construct object
+
+    # Assemble the message (with any of our modifications)
+    msg = h.assemble_msg(msg_components)
+
+    # Send the message
+    h.send_msg(tx_msg_type, msg)
+
+    # Close the node connection
+    h.disconnect()
+
 def full_suite_test():
     """
     """
@@ -296,9 +355,7 @@ def full_suite_test():
     #test_getblocks()
     #test_sysstartresponse()
     #test_versionresp()     #TODO: waiting for CSL to update message name mapping
+    #test_transaction_sending() #TODO: requires some manual additional work
 
 if __name__ == "__main__":
     full_suite_test()
-    
-    
-    
