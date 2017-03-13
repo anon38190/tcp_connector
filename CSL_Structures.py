@@ -177,9 +177,57 @@ TX_AUX = Struct("tx" / TRANSACTION,
                 "witness" / TX_WITNESS,
                 "distribution" / TX_DISTRIBUTION)
 
-##################
-# Other Structures
-##################
+#######################
+# DELEGATION MESSAGES
+#######################
+
+def PROXY_SECRET_KEY(w):
+    """
+    Creates binary structure description for specific omega.
+
+    :param w: type of additional data (omega)
+    :return: structure of proxy secret with additional data
+    """
+    return Struct("omega" / w,
+                  "issuer_pk" / PUBLIC_KEY,
+                  "delegate_pk" / PUBLIC_KEY,
+                  "cert" / SIGNATURE)
+
+def PROXY_SIGNATURE(w):
+    return Struct("omega" / w,
+                  "delegate_pk" / PUBLIC_KEY,
+                  "cert" / SIGNATURE,
+                  "sig" / SIGNATURE)
+
+PROXY_SK_LIGHT = PROXY_SECRET_KEY(Pair(VarInt, VarInt))
+PROXY_SIG_LIGHT = PROXY_SIGNATURE(Pair(VarInt, VarInt))
+PROXY_SK_HEAVY = PROXY_SECRET_KEY(VarInt)
+PROXY_SIG_HEAVY = PROXY_SIGNATURE(VarInt)
+
+SEND_PROXY_SK = Struct("tag" / Int8ub,
+                       "send_data" / Switch(this.tag,
+                       {
+                           0: PROXY_SK_LIGHT,
+                           1: PROXY_SIG_HEAVY
+                       }))
+
+CONFIRM_PROXY_SK = Struct("key" / PROXY_SK_LIGHT,
+                          "sig" / PROXY_SK_LIGHT)
+
+# Examples in REPL:
+# >>> cert = bytearray.fromhex("8db543c5fff7dd5dab609d04a834cda77958faf48cabee351def8985a2ec7dae71c7b2f0390caa54c61c9d41f5228e1a0b5da1c08638b99d03a1c02c81cb1607")
+# >>> PROXY_SK_LIGHT.build(
+#       dict( omega=[0, 10]
+#           , issuer_pk=b'\x06Y\xc8\xe2u\x99\xdcG\t\xda\xb3\xbbX\xceP\xd0r\x91P\xfc#\x80\x10\xfd:h\xdc\xf0|b\x1b\xdc'
+#           , delegate_pk=b'^\xaf\tDs=\xa88lBvV\xa8v\xb2\n\xe4\x11\xfahn\xa4\xbb\x16[S\xa3\x11\xc8h\xc2\x87'
+#           , cert=cert))
+# b'\x00\n\x06Y\xc8\xe2u\x99\xdcG\t\xda\xb3\xbbX\xceP\xd0r\x91P\xfc#\x80\x10\xfd:h\xdc\xf0|b\x1b\xdc^\xaf\tDs=\xa88lBvV\xa8v\xb2\n\xe4\x11\xfahn\xa4\xbb\x16[S\xa3\x11\xc8h\xc2\x87\x8d\xb5C\xc5\xff\xf7\xdd]\xab`\x9d\x04\xa84\xcd\xa7yX\xfa\xf4\x8c\xab\xee5\x1d\xef\x89\x85\xa2\xec}\xaeq\xc7\xb2\xf09\x0c\xaaT\xc6\x1c\x9dA\xf5"\x8e\x1a\x0b]\xa1\xc0\x868\xb9\x9d\x03\xa1\xc0,\x81\xcb\x16\x07'
+# >>> PROXY_SK_LIGHT.parse(b'\x00\n\x06Y\xc8\xe2u\x99\xdcG\t\xda\xb3\xbbX\xceP\xd0r\x91P\xfc#\x80\x10\xfd:h\xdc\xf0|b\x1b\xdc^\xaf\tDs=\xa88lBvV\xa8v\xb2\n\xe4\x11\xfahn\xa4\xbb\x16[S\xa3\x11\xc8h\xc2\x87\x8d\xb5C\xc5\xff\xf7\xdd]\xab`\x9d\x04\xa84\xcd\xa7yX\xfa\xf4\x8c\xab\xee5\x1d\xef\x89\x85\xa2\xec}\xaeq\xc7\xb2\xf09\x0c\xaaT\xc6\x1c\x9dA\xf5"\x8e\x1a\x0b]\xa1\xc0\x868\xb9\x9d\x03\xa1\xc0,\x81\xcb\x16\x07')
+# Container(omega=[0, 10])(issuer_pk=[6, 89, 200, 226, 117, 153, 220, 71, 9, 218, 179, 187, 88, 206, 80, 208, 114, 145, 80, 252, 35, 128, 16, 253, 58, 104, 220, 240, 124, 98, 27, 220])(delegate_pk=[94, 175, 9, 68, 115, 61, 168, 56, 108, 66, 118, 86, 168, 118, 178, 10, 228, 17, 250, 104, 110, 164, 187, 22, 91, 83, 163, 17, 200, 104, 194, 135])(cert=[141, 181, 67, 197, 255, 247, 221, 93, 171, 96, 157, 4, 168, 52, 205, 167, 121, 88, 250, 244, 140, 171, 238, 53, 29, 239, 137, 133, 162, 236, 125, 174, 113, 199, 178, 240, 57, 12, 170, 84, 198, 28, 157, 65, 245, 34, 142, 26, 11, 93, 161, 192, 134, 56, 185, 157, 3, 161, 192, 44, 129, 203, 22, 7])
+
+#######################
+# OTHER STRUCTURES
+#######################
 
 DATA_MSG = Struct("lwcid" / Int32ub,
                   "size" / Int32ub,
